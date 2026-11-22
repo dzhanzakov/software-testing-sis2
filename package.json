@@ -7,7 +7,8 @@
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
     "test:bugs": "BASE_URL=https://with-bugs.practicesoftwaretesting.com playwright test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "app": "node app/server.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

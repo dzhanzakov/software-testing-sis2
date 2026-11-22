@@ -47,6 +47,13 @@ export class ProductPage extends BasePage {
     await expect(this.detailName).toBeVisible();
   }
 
+  /** Opens the first product that is in stock; the shop's stock changes, so a fixed index can hit an out-of-stock item. */
+  async openFirstInStock(): Promise<void> {
+    const inStock = this.productCards.filter({ hasNot: this.page.getByTestId('out-of-stock') });
+    await inStock.first().click();
+    await expect(this.detailName).toBeVisible();
+  }
+
   /** Name and price exactly as the detail page shows the open product. */
   async detailEntry(): Promise<ProductSummary> {
     await expect(this.detailPrice).toBeVisible();

@@ -10,8 +10,9 @@ test.describe('Buy a product', () => {
 
     // Shop first, sign in at checkout. A full page reload would drop the session in this build,
     // so the flow stays inside the app after the sign-in.
+    await checkoutPage.fallBackToFakeInvoiceOnAddressValidation422();
     await productPage.openCatalogue();
-    await productPage.openFromCatalogue(0);
+    await productPage.openFirstInStock();
     const chosen = await productPage.detailEntry();
     await productPage.addToCartWithQuantity(quantity);
 

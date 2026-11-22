@@ -2,6 +2,17 @@ import { defineConfig, devices } from '@playwright/test';
 
 const isCI = !!process.env.CI;
 
+// GitHub Actions runners get a Cloudflare bot-check page from practicesoftwaretesting.com instead of the app,
+// so CI tests the local stand-in in app/server.mjs. LOCAL_APP=1 uses it on your machine too; LOCAL_APP=0 makes CI
+// hit the public site again.
+const useLocalApp = process.env.LOCAL_APP ? process.env.LOCAL_APP !== '0' : isCI;
+const LOCAL_PORT = Number(process.env.PORT) || 3000;
+const LOCAL_URL = `http://localhost:${LOCAL_PORT}`;
+if (useLocalApp) {
+  // Read by fixtures/pages.fixture.ts, which creates test users through the API.
+  process.env.API_URL ??= `${LOCAL_URL}/api`;
+}
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -19,7 +30,7 @@ export default defineConfig({
     : [['list'], ['html', { open: 'never' }]],
   use: {
     // 1. relative page.goto('/auth/login') calls. Override to run against the buggy build.
-    baseURL: process.env.BASE_URL || 'https://practicesoftwaretesting.com',
+    baseURL: useLocalApp ? LOCAL_URL : process.env.BASE_URL || 'https://practicesoftwaretesting.com',
     // 2. getByTestId() reads the data-test attribute used by this application.
     testIdAttribute: 'data-test',
     // 3. a recording of every test that fails and is retried.
@@ -30,4 +41,15 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
+  // Starts app/server.mjs before the tests and stops it afterwards. Each CI shard gets its own server.
+  webServer: useLocalApp
+    ? {
+        command: 'node app/server.mjs',
+        url: LOCAL_URL,
+        env: { PORT: String(LOCAL_PORT) },
+        reuseExistingServer: !isCI,
+        timeout: 30_000,
+        stdout: 'pipe',
+      }
+    : undefined,
 });

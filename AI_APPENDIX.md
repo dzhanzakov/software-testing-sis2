@@ -45,11 +45,17 @@ Here is the project: <Here i sent an html file of the project>"
 - Wrote `.github/workflows/playwright.yml` (4-shard matrix, npm cache, Chromium install, artefacts kept 14 days, `merge-reports` job), `merge.config.ts`, the CI branch in `playwright.config.ts`, the `.gitignore` entries and the README "CI" section. These follow the guide's templates, adapted to this repository (keeps the existing timeouts and 60 s test timeout).
 - Investigated why `buy-product.spec.ts` failed: `POST /invoices` returned 422 ("city does not belong to the selected country") for a valid address. Reading the Playwright trace showed the request payload was correct, retrying the same request kept failing, and changing the address made no difference, so the cause is the shared demo server and not the test code. The fix attempts (retry on 422, different address) were reverted because they did not help.
 
+### Red CI runs: finding the Cloudflare problem (Claude Opus 5.5, `claude-opus-5-5`)
+- Read the failed GitHub Actions runs with `gh run view --log-failed`: shards 2 and 3 failed on `login.spec.ts` (valid credentials open the account page: `page-title` not found) and `register.spec.ts` (`fill` timed out waiting for `email`), in every attempt including both retries.
+- Downloaded the `test-results-2` and `test-results-3` artefacts and read the `error-context.md` page snapshots of the failed attempts. Every one showed Cloudflare's "Performing security verification" page (with a Cloudflare Ray ID) instead of the Toolshop.
+- Ran `tsc --noEmit` and the two specs locally: both passed. The failures were identical on every retry, and the wrong-password test in the same shard passed, so the challenge appeared after a successful sign-in or registration rather than because of the test code or flakiness.
+- Conclusion: GitHub-hosted runners use shared Azure datacenter IPs, which Cloudflare challenges as likely bots, so the public site cannot be tested from CI. I then decided to serve the app inside the CI job with a small local Node.js server (`app/server.mjs`) started through Playwright's `webServer` option; see the README section "Why CI tests a local copy of the app".
+
 ## Prompts (summary)
 1. "how to add CI files here (first step)" (with the guide attached).
 3. "check why first fails" (with the local `npx playwright test` output).
 4. "can you make sure that problem doesn't appear again", then "i tried several times in my playwright UI, each time it worked".
-
+5. "how to locally run nodejs separate server to avoid cloudfare blocks"
 
 ## What was verified by hand / locally
 - `CI=true npx playwright test --shard=i/2` produces `blob-report/` and `reports/junit.xml`.

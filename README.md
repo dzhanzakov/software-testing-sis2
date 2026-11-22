@@ -106,7 +106,9 @@ Median of 3 runs per configuration, measured on GitHub Actions. "Before" ran fro
 
 ### Known flakiness
 
-The suite runs against the shared public demo site. `POST /invoices` sometimes answers 422 ("city does not belong to the selected country") for a valid address, which makes the buy-product test fail intermittently. `retries: 2` marks such a test as flaky instead of red.
+**In CI:** none known. The tests run against the local app (`app/server.mjs`), which starts empty in every shard and does not depend on the network, so runs are repeatable. `retries: 2` stays as a safety net, and a retried test would show as flaky instead of red.
+
+**Locally, against the shared public site:** `POST /invoices` sometimes answers 422 ("city does not belong to the selected country") for a valid address. The buy-product test handles this by substituting a fake invoice only for that exact 422 (`fallBackToFakeInvoiceOnAddressValidation422`), so the rest of the checkout is still tested. The public site's stock also changes, which is why the test buys the first in-stock product instead of a fixed one.
 
 ### Running the CI setup locally
 
